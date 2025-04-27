@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CRLite Status</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 1rem;
+        background: #f9fafb;
+        width: 280px;
+        color: #1f2937;
+      }
+
+      h1 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        color: #111827;
+      }
+
+      .status-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .label {
+        font-weight: 600;
+      }
+
+      .value {
+        font-weight: 500;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .revoked {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .not-revoked {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+
+      .unknown {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+
+      button {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+      }
+
+      button:hover {
+        background-color: #2563eb;
+      }
+
+      footer {
+        margin-top: 1rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CRLite Certificate Status</h1>
+
+    <div class="status-container">
+      <div>
+        <span class="label">Domain:</span>
+        <span class="value" id="domain">Loading...</span>
+      </div>
+      <div>
+        <span class="label">Status:</span>
+        <span class="badge unknown" id="statusBadge">Unknown</span>
+      </div>
+    </div>
+    <div>
+      <h2>Certificate Details:</h2>
+      <pre id="certDetails">Loading...</pre>
+    </div>
+
+    <button id="refresh">Refresh</button>
+
+    <footer>CRLite Checker Extension</footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

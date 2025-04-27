@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "CRLite Extension",
+  "version": "1.0",
+  "description": "Checks if a certificate is revoked using Bloom filter cascade.",
+  "permissions": ["storage", "webRequest", "activeTab", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html", "blocked.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

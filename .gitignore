@@ -1,0 +1,41 @@
+# -------------------------------
+# Node.js Server (backend)
+# -------------------------------
+node_modules/
+*.log
+.env
+
+# Optional: if you use VSCode for development
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# -------------------------------
+# Python Virtual Environment
+# -------------------------------
+venv/
+env/
+ENV/
+
+# -------------------------------
+# Chrome Extension (frontend)
+# -------------------------------
+# Build artifacts
+dist/
+build/
+
+# Temporary or dev artifacts
+*.pem   # Chrome extension keys (if any)
+*.zip   # Exported extension packages
+*.crx   # Chrome packaged apps
+
+# Ignoring dynamically generated filter file (optional)
+cascadeFilters.json
+
+# Miscellaneous
+*.swp
+*.swo
+*~
+*.bak
