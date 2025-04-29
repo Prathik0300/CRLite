@@ -1,67 +1,38 @@
 const express = require("express");
 const cors = require("cors");
-const { BloomFilter } = require("bloom-filters");
 const tls = require("tls");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const bloom = new BloomFilter(1000, 4);
+// Simulated dynamically revoked domains
+const dynamicRevokedDomains = [
+  "github.com",
+  "uic.blackboard.com",
+  "expired.badssl.com",
+];
 
-// Static revoked domains for simulation
-const staticRevokedDomains = ["openai.com", "google.com"];
-const dynamicRevokedDomains = ["github.com", "uic.blackboard.com"];
-
-// Populate baseline Bloom filter
-async function populateStatic() {
-  for (const domain of staticRevokedDomains) {
-    try {
-      await addCertSerialToBloom(domain, bloom);
-    } catch (err) {
-      console.error(`Error fetching ${domain}:`, err.message);
-    }
-  }
-}
-
-async function addCertSerialToBloom(domain, bloom) {
-  return new Promise((resolve, reject) => {
-    const socket = tls.connect(443, domain, { servername: domain }, () => {
-      const cert = socket.getPeerCertificate(true);
-      if (cert.serialNumber) {
-        bloom.add(cert.serialNumber);
-      }
-      socket.end();
-      resolve();
-    });
-    socket.on("error", reject);
-  });
-}
-
-populateStatic();
-
-app.get("/filter", (req, res) => {
-  res.json(bloom.saveAsJSON());
+// ✅ GET /revokedList — List of revoked domains
+app.get("/revokedList", (req, res) => {
+  res.json(dynamicRevokedDomains);
 });
 
+// ✅ GET /cert?domain=... — Fetch TLS certificate info
 app.get("/cert", (req, res) => {
   const domain = req.query.domain;
-  if (!domain) {
-    return res.status(400).json({ error: "Missing domain" });
-  }
+  if (!domain) return res.status(400).json({ error: "Missing domain" });
 
   const socket = tls.connect(443, domain, { servername: domain }, () => {
     const cert = socket.getPeerCertificate(true);
     socket.end();
 
-    let valid_to = cert.valid_to;
-    console.log({ valid_to, domain });
-    // ✅ If domain is dynamically revoked, manipulate valid_to
+    let validTo = cert.valid_to;
     if (dynamicRevokedDomains.includes(domain)) {
-      console.log("inside ");
-      const pastDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
-      valid_to = pastDate.toUTCString();
-      console.log(`🔧 Faking valid_to for revoked domain ${domain}:`, valid_to);
+      // Fake an expired certificate date (7 days ago)
+      const pastDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      validTo = pastDate.toUTCString();
+      console.log(`🔧 Faking expired valid_to for ${domain}:`, validTo);
     }
 
     res.json({
@@ -69,7 +40,7 @@ app.get("/cert", (req, res) => {
       subject: cert.subject,
       issuer: cert.issuer,
       valid_from: cert.valid_from,
-      valid_to: valid_to,
+      valid_to: validTo,
     });
   });
 
@@ -78,12 +49,8 @@ app.get("/cert", (req, res) => {
   });
 });
 
-// ✅ New API for revoked list
-app.get("/revokedList", (req, res) => {
-  res.json(dynamicRevokedDomains);
-});
-
+// Start server
 const port = 3000;
 app.listen(port, () => {
-  console.log(`✅ Server running at http://localhost:${port}`);
+  console.log(`✅ CRLite server running at http://localhost:${port}`);
 });

@@ -10,20 +10,12 @@ filter_size = 512           # Increased size for better accuracy
 hash_count = 3              # Number of hash functions
 
 revoked_serials = [
-    "phishy-site.io", "bad-cert.com", "malware-download.net", "expired-ssl.org",
-    "typoo-bank.com", "fakesecurity-alert.site", "fraudpay.net", "notgoogle.com",
-    "my-paypal-login.info", "login-verification-update.net", "update-billing-details.com",
-    "secure-email-access.org", "apple-login-verify.info", "getyourgiftcard-now.net",
-    "win-a-free-iphone.biz", "important-notice-alert.org", "recovery-verification.com",
-    "fakeantivirusalert.net", "paypal-login-portal.net", "banking-verification-alert.info",
-    "unusual-login-activity-alert.com", "your-tax-refund-now.biz",
-    "covid-vaccine-registration.net", "account-suspension-warning.com",
-    "system-security-notification.org", "google.com", "openai.com"
+     "google.com", "openai.com"
 ]
 
 not_revoked_serials = [ 
     "apple.com", "microsoft.com", "mozilla.org",
-    "amazon.com", "wikipedia.org", "github.com", "example.com", "uic.edu",
+    "amazon.com", "wikipedia.org", "example.com", "uic.edu",
     "linkedin.com", "cloudflare.com", "python.org", "stackoverflow.com",
     "docker.com", "firebase.google.com", "bbc.com", "cnn.com", "nytimes.com",
     "nasa.gov", "youtube.com", "duckduckgo.com", "netflix.com", "adobe.com",
