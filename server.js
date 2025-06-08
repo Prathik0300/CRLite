@@ -6,19 +6,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Simulated dynamically revoked domains
 const dynamicRevokedDomains = [
   "github.com",
   "uic.blackboard.com",
   "expired.badssl.com",
 ];
 
-// ✅ GET /revokedList — List of revoked domains
 app.get("/revokedList", (req, res) => {
   res.json(dynamicRevokedDomains);
 });
 
-// ✅ GET /cert?domain=... — Fetch TLS certificate info
 app.get("/cert", (req, res) => {
   const domain = req.query.domain;
   if (!domain) return res.status(400).json({ error: "Missing domain" });
@@ -52,5 +49,5 @@ app.get("/cert", (req, res) => {
 // Start server
 const port = 3000;
 app.listen(port, () => {
-  console.log(`✅ CRLite server running at http://localhost:${port}`);
+  console.log(`CRLite server running at http://localhost:${port}`);
 });

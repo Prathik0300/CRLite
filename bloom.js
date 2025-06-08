@@ -82,7 +82,7 @@ class BloomFilter {
   }
 }
 
-// ✅ Attach functions to global scope so background.js can use it
+// Attach functions to global scope so background.js can use it
 self.BloomFilter = BloomFilter;
 self.sha256Hash = sha256Hash;
 self.checkCascade = checkCascade;

@@ -1,4 +1,4 @@
-importScripts("bloom.js"); // SHA-256 + BloomFilter helpers
+importScripts("bloom.js");
 
 let staticFilters = null;
 let dynamicRevokedFilter = new BloomFilter(256, 4);
@@ -6,14 +6,13 @@ let dynamicWhitelistFilter = new BloomFilter(256, 4);
 
 const BLOOM_REFRESH_INTERVAL = 10 * 60 * 1000;
 
-// Load static cascadeFilters
 fetch(chrome.runtime.getURL("cascadeFilters.json"))
   .then((res) => res.json())
   .then((data) => {
     staticFilters = data;
     console.log("✔️ Static cascadeFilters loaded");
   })
-  .catch((err) => console.error("❌ Error loading cascade filters:", err));
+  .catch((err) => console.error(" Error loading cascade filters:", err));
 
 // Fetch revoked domains from server
 async function fetchRevokedList() {
@@ -21,9 +20,9 @@ async function fetchRevokedList() {
     const res = await fetch("http://127.0.0.1:3000/revokedList");
     const list = await res.json();
     await chrome.storage.local.set({ revokedList: list });
-    console.log("✅ Revoked domain list loaded:", list);
+    console.log(" Revoked domain list loaded:", list);
   } catch (err) {
-    console.error("❌ Failed to fetch revoked list:", err);
+    console.error(" Failed to fetch revoked list:", err);
   }
 }
 
@@ -52,10 +51,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
     if (revokedList?.includes(domain)) {
       await dynamicRevokedFilter.add(serial);
-      console.warn(`🚫 ${domain} is revoked → adding to revoked filter`);
+      console.warn(` ${domain} is revoked → adding to revoked filter`);
     } else {
       await dynamicWhitelistFilter.add(serial);
-      console.log(`✅ ${domain} added to whitelist`);
+      console.log(` ${domain} added to whitelist`);
     }
 
     const certStatus = await checkRevocation(serial);
@@ -87,7 +86,7 @@ async function fetchCertificate(domain) {
     const res = await fetch(`http://127.0.0.1:3000/cert?domain=${domain}`);
     return await res.json();
   } catch (e) {
-    console.error(`❌ Failed to fetch cert for ${domain}:`, e.message);
+    console.error(`Failed to fetch cert for ${domain}:`, e.message);
     return null;
   }
 }
