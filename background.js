@@ -1,81 +1,74 @@
-importScripts("bloom.js"); // SHA-256 based
-let filters = null;
+importScripts("bloom.js");
 
-// Load Bloom filters from cascadeFilters.json
+let staticFilters = null;
+let dynamicRevokedFilter = new BloomFilter(256, 4);
+let dynamicWhitelistFilter = new BloomFilter(256, 4);
+
+const BLOOM_REFRESH_INTERVAL = 10 * 60 * 1000;
+
 fetch(chrome.runtime.getURL("cascadeFilters.json"))
   .then((res) => res.json())
   .then((data) => {
-    filters = data;
-    console.log("✔️ Bloom filters loaded");
+    staticFilters = data;
+    console.log("✔️ Static cascadeFilters loaded");
   })
-  .catch((err) => console.error("❌ Error loading filters:", err));
+  .catch((err) => console.error(" Error loading cascade filters:", err));
 
-// Intercept every main-frame request
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    if (!filters) return;
+// Fetch revoked domains from server
+async function fetchRevokedList() {
+  try {
+    const res = await fetch("http://127.0.0.1:3000/revokedList");
+    const list = await res.json();
+    await chrome.storage.local.set({ revokedList: list });
+    console.log(" Revoked domain list loaded:", list);
+  } catch (err) {
+    console.error(" Failed to fetch revoked list:", err);
+  }
+}
 
-    const url = new URL(details.url);
+fetchRevokedList();
+setInterval(fetchRevokedList, BLOOM_REFRESH_INTERVAL);
 
-    // ⛔ Ignore extension or chrome-internal URLs
-    if (
-      url.protocol === "chrome-extension:" ||
-      url.hostname.endsWith("chrome.com") ||
-      url.hostname.includes("chromewebdata")
-    ) {
-      return;
-    }
-
-    const domain = url.hostname.replace(/^www\./, "");
-    const serial = btoa(domain);
-
-    return (async () => {
-      const status = await checkCascade(serial, filters);
-
-      console.log(`🛡️ Checked ${domain}: ${status}`);
-
-      chrome.storage.local.set({
-        lastChecked: domain,
-        certStatus: status,
-      });
-
-      if (status === "Revoked") {
-        console.log("YES IT IS REVOKED!!!");
-        return {
-          redirectUrl:
-            chrome.runtime.getURL("blocked.html") + `?domain=${domain}`,
-        };
-      }
-
-      return {};
-    })();
-  },
-  { urls: ["<all_urls>"], types: ["main_frame"] }
-);
-
+// Handle each tab update
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (
     changeInfo.status !== "complete" ||
     !tab.url ||
     tab.url.startsWith("chrome://") ||
-    tab.url.startsWith("chrome-extension://") ||
-    !filters
+    tab.url.startsWith("chrome-extension://")
   )
     return;
 
   const url = new URL(tab.url);
   const domain = url.hostname.replace(/^www\./, "");
-  const serial = btoa(domain);
 
   (async () => {
-    const status = await checkCascade(serial, filters);
+    const certInfo = await fetchCertificate(domain);
+    if (!certInfo || !certInfo.serialNumber) return;
 
-    if (status === "Revoked") {
-      console.warn(`🚫 Redirecting to blocked.html for ${domain}`);
+    const serial = certInfo.serialNumber;
+    const { revokedList } = await chrome.storage.local.get(["revokedList"]);
 
+    if (revokedList?.includes(domain)) {
+      await dynamicRevokedFilter.add(serial);
+      console.warn(` ${domain} is revoked → adding to revoked filter`);
+    } else {
+      await dynamicWhitelistFilter.add(serial);
+      console.log(` ${domain} added to whitelist`);
+    }
+
+    const certStatus = await checkRevocation(serial);
+    console.log(`🛡️ ${domain} ➝ ${certStatus}`);
+
+    chrome.storage.local.set({
+      lastChecked: domain,
+      certStatus: certStatus,
+      certInfo: certInfo,
+    });
+
+    if (certStatus === "Revoked") {
       const blockedUrl =
         chrome.runtime.getURL("blocked.html") + `?domain=${domain}`;
-
       chrome.scripting.executeScript({
         target: { tabId },
         func: (url) => {
@@ -87,39 +80,55 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   })();
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (
-    changeInfo.status !== "complete" ||
-    !tab.url ||
-    tab.url.startsWith("chrome://") ||
-    tab.url.startsWith("chrome-extension://") ||
-    !filters
-  )
-    return;
-
-  const url = new URL(tab.url);
-  const domain = url.hostname.replace(/^www\./, "");
-
-  (async () => {
-    const certInfo = await fetchCertificate(domain);
-
-    if (certInfo) {
-      console.log("✅ Cert for", domain, certInfo);
-      chrome.storage.local.set({
-        certInfo: certInfo,
-      });
-    }
-  })();
-});
-
+// Fetch certificate
 async function fetchCertificate(domain) {
   try {
-    const response = await fetch(`http://localhost:3000/cert?domain=${domain}`);
-    const data = await response.json();
-    console.log("🔍 Certificate Info:", data);
-    return data;
-  } catch (error) {
-    console.error("❌ Failed to fetch certificate:", error);
+    const res = await fetch(`http://127.0.0.1:3000/cert?domain=${domain}`);
+    return await res.json();
+  } catch (e) {
+    console.error(`Failed to fetch cert for ${domain}:`, e.message);
     return null;
   }
+}
+
+// Revocation check
+async function checkRevocation(serial) {
+  if (!serial) return "Unknown";
+
+  if (await dynamicWhitelistFilter.has(serial)) {
+    return "Not Revoked";
+  }
+  if (await dynamicRevokedFilter.has(serial)) {
+    return "Revoked";
+  }
+
+  if (staticFilters?.levels) {
+    let maybeRevoked = false;
+
+    for (const level of staticFilters.levels) {
+      const hit = await checkBloomFilter(
+        level.bitArray,
+        level.size,
+        level.hashCount,
+        serial
+      );
+      if (level.type === "blacklist" && hit) maybeRevoked = true;
+      if (level.type === "whitelist" && maybeRevoked && hit)
+        return "Not Revoked";
+    }
+
+    return maybeRevoked ? "Revoked" : "Not Revoked";
+  }
+
+  return "Unknown";
+}
+
+// Bloom hash checker
+async function checkBloomFilter(bitArray, size, hashCount, key) {
+  for (let i = 0; i < hashCount; i++) {
+    const hash = await sha256Hash(key, i);
+    const index = hash % size;
+    if (bitArray[index] === 0) return false;
+  }
+  return true;
 }

@@ -1,40 +1,44 @@
-const tls = require("tls");
-const fs = require("fs");
 const express = require("express");
-const app = express();
-const port = 3000; // or any free port
+const cors = require("cors");
+const tls = require("tls");
 
+const app = express();
+app.use(cors());
 app.use(express.json());
 
-// Allow CORS (important for extension to call it)
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  next();
+const dynamicRevokedDomains = [
+  "github.com",
+  "uic.blackboard.com",
+  "expired.badssl.com",
+];
+
+app.get("/revokedList", (req, res) => {
+  res.json(dynamicRevokedDomains);
 });
 
 app.get("/cert", (req, res) => {
   const domain = req.query.domain;
-
-  if (!domain) {
-    return res.status(400).json({ error: "Domain query param required" });
-  }
+  if (!domain) return res.status(400).json({ error: "Missing domain" });
 
   const socket = tls.connect(443, domain, { servername: domain }, () => {
     const cert = socket.getPeerCertificate(true);
+    socket.end();
 
-    if (!cert || Object.keys(cert).length === 0) {
-      return res.status(500).json({ error: "No certificate found" });
+    let validTo = cert.valid_to;
+    if (dynamicRevokedDomains.includes(domain)) {
+      // Fake an expired certificate date (7 days ago)
+      const pastDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      validTo = pastDate.toUTCString();
+      console.log(`🔧 Faking expired valid_to for ${domain}:`, validTo);
     }
 
     res.json({
+      serialNumber: cert.serialNumber,
       subject: cert.subject,
       issuer: cert.issuer,
-      serialNumber: cert.serialNumber,
       valid_from: cert.valid_from,
-      valid_to: cert.valid_to,
+      valid_to: validTo,
     });
-
-    socket.end();
   });
 
   socket.on("error", (err) => {
@@ -42,8 +46,8 @@ app.get("/cert", (req, res) => {
   });
 });
 
+// Start server
+const port = 3000;
 app.listen(port, () => {
-  console.log(
-    `✅ Certificate fetch server running on http://localhost:${port}`
-  );
+  console.log(`CRLite server running at http://localhost:${port}`);
 });
