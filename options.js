@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "apiBase",
     "blockRevoked",
   ]);
-  input.value = apiBase || "https://YOUR-RENDER-APP.onrender.com"; // replace with your Render URL
+  input.value = apiBase || "https://crlite.onrender.com";
   blockRevokedEl.checked = blockRevoked !== false; // default to ON when undefined
 
   document.getElementById("save").addEventListener("click", async () => {

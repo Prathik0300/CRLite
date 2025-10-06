@@ -1,5 +1,5 @@
 // Configurable API base; can be changed via options page
-const DEFAULT_API_BASE = "https://YOUR-RENDER-APP.onrender.com"; // replace with your Render URL
+const DEFAULT_API_BASE = "https://crlite.onrender.com";
 
 async function getApiBase() {
   const { apiBase } = await chrome.storage.local.get(["apiBase"]);
