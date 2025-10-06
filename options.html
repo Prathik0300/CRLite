@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>CRLite Options</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      input {
+        width: 420px;
+        max-width: 100%;
+        padding: 6px 8px;
+      }
+      button {
+        margin-top: 12px;
+        padding: 6px 12px;
+      }
+      .note {
+        margin-top: 12px;
+        color: #555;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CRLite Options</h1>
+    <label for="apiBase">Certificate API Base URL</label>
+    <input id="apiBase" type="text" placeholder="https://api.example.com" />
+    <div class="note">
+      The extension will call {apiBase}/cert?domain=example.com
+    </div>
+    <div style="margin-top: 12px">
+      <label
+        ><input type="checkbox" id="blockRevoked" /> Block revoked certificates
+        (OCSP)</label
+      >
+    </div>
+    <button id="save">Save</button>
+    <script src="options.js"></script>
+  </body>
+</html>

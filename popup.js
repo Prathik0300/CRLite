@@ -20,15 +20,18 @@ function updateUI(data) {
 }
 
 chrome.storage.local.get(["certInfo"], (data) => {
+  const detailsEl = document.getElementById("certDetails");
   if (data.certInfo) {
     const cert = data.certInfo;
-    document.getElementById("certDetails").innerText = `
-Subject: ${cert.subject.CN}
-Issuer: ${cert.issuer.CN}
-Serial: ${cert.serialNumber}
-Valid From: ${cert.valid_from}
-Valid To: ${cert.valid_to}
+    detailsEl.innerText = `
+Subject: ${cert.subject?.CN ?? "-"}
+Issuer: ${cert.issuer?.CN ?? "-"}
+Serial: ${cert.serialNumber ?? "-"}
+Valid From: ${cert.valid_from ?? "-"}
+Valid To: ${cert.valid_to ?? "-"}
     `;
+  } else {
+    detailsEl.innerText = "No certificate details available.";
   }
 });
 
