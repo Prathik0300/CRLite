@@ -201,6 +201,48 @@ app.get("/cert", (req, res) => {
   });
 });
 
+// Minimal Privacy Policy page for Chrome Web Store
+app.get("/privacy", (_req, res) => {
+  res.type("html").send(`<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CRLite Privacy Policy</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; padding: 24px; max-width: 840px; margin: 0 auto; }
+      h1 { margin: 0 0 12px; }
+      h2 { margin: 24px 0 8px; font-size: 1.05rem; }
+      p { margin: 8px 0; }
+      ul { margin: 8px 0 8px 18px; }
+      small { color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <h1>CRLite Privacy Policy</h1>
+    <p><strong>Effective date:</strong> ${new Date()
+      .toISOString()
+      .slice(0, 10)}</p>
+    <h2>Overview</h2>
+    <p>CRLite checks the TLS/SSL certificate status of the site you visit to help block unsafe pages. It does not collect personal data.</p>
+    <h2>Data Collected</h2>
+    <ul>
+      <li><strong>Domain only:</strong> The extension sends the current site’s domain to this API to retrieve certificate status.</li>
+      <li>No names, emails, identifiers, or browsing history are collected.</li>
+    </ul>
+    <h2>Use of Data</h2>
+    <p>The domain is used solely to determine certificate expiry, revocation (OCSP), and basic chain trust; it is not sold or shared.</p>
+    <h2>Storage & Retention</h2>
+    <p>No user profiles are created. The API does not persist personal data; standard server logs may include the requested domain and IP for diagnostics and are rotated routinely.</p>
+    <h2>Third Parties</h2>
+    <p>No advertising, analytics, or third‑party sharing.</p>
+    <h2>Contact</h2>
+    <p>For questions about this policy, contact the extension publisher via the Chrome Web Store listing.</p>
+    <p><small>Last updated automatically on server deploy.</small></p>
+  </body>
+</html>`);
+});
+
 // Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
